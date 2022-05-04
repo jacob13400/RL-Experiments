@@ -10,6 +10,7 @@ Here we train it on 2 different environments, one that only takes into considera
  - target_episode: This defines the episode after which we switch to the new environment
  - env: The initial environment
  - env_2: The new environment
+ - outdir: This defines the location where the result is to be stored, give a new location each time you run to prevent it from overwriting the previous values
 
 ## Note
 
