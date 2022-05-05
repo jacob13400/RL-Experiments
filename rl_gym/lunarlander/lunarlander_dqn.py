@@ -2,7 +2,7 @@ import numpy as np
 import gym
 from gym import wrappers
 import tensorflow as tf
-import json, sys, os
+import json, sys, os, datetime
 from os import path
 import random
 from collections import deque
@@ -20,7 +20,7 @@ env_to_use = 'LunarLander-v2'
 env_to_use_2 = 'LunarLanderContinuous-v2'
 
 # hyperparameters
-target_episodes = 5
+target_episodes = 100
 gamma = 0.99				# reward discount factor
 h1 = 12					# hidden layer 1 size
 h2 = 12					# hidden layer 2 size
@@ -29,7 +29,7 @@ lr = 5e-5				# learning rate
 lr_decay = 1			# learning rate decay (per episode)
 l2_reg = 1e-6				# L2 regularization factor
 dropout = 0				# dropout rate (0 = no dropout)
-num_episodes = 10		# number of episodes
+num_episodes = 200		# number of episodes
 max_steps_ep = 10000	# default max number of steps per episode (unless env has a lower hardcoded limit)
 slow_target_burnin = 1000		# number of steps where slow target weights are tied to current network weights
 update_slow_target_every = 100	# number of steps to use slow target as target before updating it to latest weights
@@ -54,7 +54,8 @@ env_2.seed(0)
 np.random.seed(0)
 
 # prepare monitorings
-outdir = '/home/jake/Desktop/Work/RL-Experiments/tmp/dqn-agent-results'
+# NOTE: CHANGE DIRECTORY TO MATCH YOUR LOCAL SYSTEM
+outdir = '/home/jose/RL-Experiments/tmp/dqn-agent-results-' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 env = wrappers.Monitor(env, outdir, force=True)
 env_2 = wrappers.Monitor(env, outdir, force=True)
 def writefile(fname, s):
