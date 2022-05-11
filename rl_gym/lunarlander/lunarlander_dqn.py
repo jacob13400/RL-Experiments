@@ -16,20 +16,21 @@ from collections import deque
 # stability and encourage convergence.
 # Parameter updates are made via Adam.
 
-env_to_use = 'LunarLander-v2'
-env_to_use_2 = 'LunarLanderContinuous-v2'
+env_to_use = 'LunarLanderNoFuel-v2' 
+env_to_use_2 = 'LunarLander-v2'
+env_to_use_3 = 'LunarLanderContinuous-v2'
 
 # hyperparameters
-target_episodes = 10
-gamma = 0.99				# reward discount factor
+target_episodes = 20
+gamma = 0.99			# reward discount factor
 h1 = 12					# hidden layer 1 size
 h2 = 12					# hidden layer 2 size
 h3 = 12					# hidden layer 3 size
 lr = 5e-5				# learning rate
 lr_decay = 1			# learning rate decay (per episode)
-l2_reg = 1e-6				# L2 regularization factor
+l2_reg = 1e-6			# L2 regularization factor
 dropout = 0				# dropout rate (0 = no dropout)
-num_episodes = 20		# number of episodes
+num_episodes = 50	# number of episodes
 max_steps_ep = 10000	# default max number of steps per episode (unless env has a lower hardcoded limit)
 slow_target_burnin = 1000		# number of steps where slow target weights are tied to current network weights
 update_slow_target_every = 100	# number of steps to use slow target as target before updating it to latest weights
@@ -48,16 +49,20 @@ n_actions = env.action_space.n 								# Assuming discrete action space
 
 env_2 = gym.make(env_to_use_2)
 
+env_3 = gym.make(env_to_use_3)
+
 # set seeds to 0
 env.seed(0)
 env_2.seed(0)
+env_3.seed(0)
 np.random.seed(0)
 
 # prepare monitorings
 # NOTE: CHANGE DIRECTORY TO MATCH YOUR LOCAL SYSTEM
-outdir = '/home/jose/RL-Experiments/tmp/dqn-agent-results-' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+outdir = '/home/amrita/spinningupRL-Experiments/tmp/dqn-agent-results-' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 env = wrappers.Monitor(env, outdir, force=True)
 env_2 = wrappers.Monitor(env, outdir, force=True)
+env_3 = wrappers.Monitor(env, outdir, force=True)
 def writefile(fname, s):
     with open(path.join(outdir, fname), 'w') as fh: fh.write(s)
 info = {}
@@ -171,6 +176,7 @@ for ep in range(num_episodes):
 	# Initial state
 	observation = env.reset()
 	observation = env_2.reset()
+	observation = env_3.reset()
 	# env.render()
 
 	for t in range(max_steps_ep):
@@ -184,12 +190,15 @@ for ep in range(num_episodes):
 			action = np.argmax(q_s)
 
 		# take step
-		if (ep < target_episodes):
+		if ep < target_episodes:
 			next_observation, reward, done, _info = env.step(action)
 			env.render()
-		else:
+		elif ep < num_episodes:
 			next_observation, reward, done, _info = env_2.step(action)
 			env_2.render()
+		else:
+			next_observation, reward, done, _info = env_3.step(action)
+			env_3.render()
 		total_reward += reward
 
 		# add this to experience replay buffer
@@ -200,6 +209,7 @@ for ep in range(num_episodes):
 		# update the slow target's weights to match the latest q network if it's time to do so
 		if total_steps%update_slow_target_every == 0:
 			_ = sess.run(update_slow_target_op)
+
 
 		# update network weights to fit a minibatch of experience
 		if total_steps%train_every == 0 and len(experience) >= minibatch_size:
