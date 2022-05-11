@@ -20,7 +20,7 @@ env_to_use = 'LunarLander-v2'
 env_to_use_2 = 'LunarLanderContinuous-v2'
 
 # hyperparameters
-target_episodes = 100
+target_episodes = 10
 gamma = 0.99				# reward discount factor
 h1 = 12					# hidden layer 1 size
 h2 = 12					# hidden layer 2 size
@@ -29,7 +29,7 @@ lr = 5e-5				# learning rate
 lr_decay = 1			# learning rate decay (per episode)
 l2_reg = 1e-6				# L2 regularization factor
 dropout = 0				# dropout rate (0 = no dropout)
-num_episodes = 200		# number of episodes
+num_episodes = 20		# number of episodes
 max_steps_ep = 10000	# default max number of steps per episode (unless env has a lower hardcoded limit)
 slow_target_burnin = 1000		# number of steps where slow target weights are tied to current network weights
 update_slow_target_every = 100	# number of steps to use slow target as target before updating it to latest weights
@@ -176,7 +176,7 @@ for ep in range(num_episodes):
 	for t in range(max_steps_ep):
 
 		# choose action according to epsilon-greedy policy wrt Q
-		if np.random.random() < epsilon:
+		if np.random.random() < epsilon and ep < target_episodes:
 			action = np.random.randint(n_actions)
 		else:
 			q_s = sess.run(q_action_values, 
