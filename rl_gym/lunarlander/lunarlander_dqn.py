@@ -1,3 +1,19 @@
+'''
+
+TODO:
+
+1. Configure epsilon so that after target_episodes it's only exploiting, not exploring
+Refer step 4 before moving on
+2. Write case where previous step reward not part of observation if already is, vice-versa if not.
+3. Write case wherer next step reward given as part of observation if possible.
+4. Convert DQN to PPO (do preliminary research before step 2 to see if this would change how 2 and 3 are done)
+5. Add LSTM
+
+When required from any step after 1, graph results.
+
+'''
+
+
 import numpy as np
 import gym
 from gym import wrappers
@@ -6,6 +22,8 @@ import json, sys, os, datetime
 from os import path
 import random
 from collections import deque
+
+# from envs import LunarLanderNoFuel
 
 # Deep Q-Networks (DQN)
 # An off-policy action-value function based approach (Q-learning) that uses epsilon-greedy exploration
@@ -44,6 +62,7 @@ epsilon_decay_exp = 0.97	# exponential decay rate after reaching epsilon_end (pe
 
 # game parameters
 env = gym.make(env_to_use)
+# env = LunarLanderNoFuel()
 state_dim = np.prod(np.array(env.observation_space.shape)) 	# Get total number of dimensions in state
 n_actions = env.action_space.n 								# Assuming discrete action space
 
@@ -59,7 +78,7 @@ np.random.seed(0)
 
 # prepare monitorings
 # NOTE: CHANGE DIRECTORY TO MATCH YOUR LOCAL SYSTEM
-outdir = '/home/amrita/spinningupRL-Experiments/tmp/dqn-agent-results-' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+outdir = '/home/jose/RL-Experiments/tmp/dqn-agent-results-' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 env = wrappers.Monitor(env, outdir, force=True)
 env_2 = wrappers.Monitor(env, outdir, force=True)
 env_3 = wrappers.Monitor(env, outdir, force=True)
