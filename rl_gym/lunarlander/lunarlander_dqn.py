@@ -38,7 +38,7 @@ env_to_use_2 = 'LunarLander-v2'
 env_to_use_3 = 'LunarLanderContinuous-v2'
 
 # hyperparameters
-target_episodes = 200
+target_episodes = 20
 gamma = 0.99			# reward discount factor
 h1 = 12					# hidden layer 1 size
 h2 = 12					# hidden layer 2 size
@@ -47,7 +47,7 @@ lr = 5e-5				# learning rate
 lr_decay = 1			# learning rate decay (per episode)
 l2_reg = 1e-6			# L2 regularization factor
 dropout = 0				# dropout rate (0 = no dropout)
-num_episodes = 500	# number of episodes
+num_episodes = 50	# number of episodes
 max_steps_ep = 10000	# default max number of steps per episode (unless env has a lower hardcoded limit)
 slow_target_burnin = 1000		# number of steps where slow target weights are tied to current network weights
 update_slow_target_every = 100	# number of steps to use slow target as target before updating it to latest weights
@@ -132,6 +132,24 @@ def generate_network(s, trainable, reuse):
 	action_values = tf.squeeze(tf.layers.dense(hidden_drop_3, n_actions, trainable = trainable, name = 'dense_3', reuse = reuse))
 	return action_values
 
+# used to get weights of every layer for analysis
+def get_weights(start=0, end=0):
+	ret = {}
+	all_vars = tf.trainable_variables()
+	end = len(all_vars) if end == 0 else end
+	for i in range(len(all_vars)):
+		if all_vars[i].name.startswith("q_network") and i >= start and i < end:
+			a = all_vars[i].value()
+			v = sess.run(a)
+			ret[all_vars[i].name] = v
+	return ret
+
+def print_weights(start=0, end=0):
+	weights = get_weights(start=start, end=end)
+	for layer in weights:
+		print("{}\n{}".format(layer, weights[layer]))
+
+
 with tf.variable_scope('q_network') as scope:
 	# Q network applied to state_ph
 	q_action_values = generate_network(state_ph, trainable = True, reuse = False)
@@ -185,6 +203,8 @@ experience = deque(maxlen=replay_memory_capacity)
 
 epsilon = epsilon_start
 epsilon_linear_step = (epsilon_start-epsilon_end)/epsilon_decay_length
+
+print_weights()
 
 for ep in range(num_episodes):
 
@@ -268,7 +288,11 @@ for ep in range(num_episodes):
 
 	print('Episode %2i, Reward: %7.3f, Steps: %i, Next eps: %7.3f'%(ep,total_reward,steps_in_ep, epsilon))
 
+print_weights()
+
 # Finalize and upload results
 writefile('info.json', json.dumps(info))
 env.close()
+
+
 gym.upload(outdir)
