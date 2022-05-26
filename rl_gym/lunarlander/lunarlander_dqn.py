@@ -3,12 +3,17 @@
 TODO:
 
 Refer step 3 before moving on
-1. Write case where previous step reward not part of observation if already is, vice-versa if not.
+1. Write case where previous step reward not part of observation if already is, vice-versa if not.  Addendum: It's not now, I think.
 2. Write case wherer next step reward given as part of observation if possible.
 3. Convert DQN to PPO (do preliminary research before step 2 to see if this would change how 2 and 3 are done)
 4. Add LSTM
 
-When required from any step after 1, graph results.
+Graph results at any point.
+
+NOTES
+I think for changing the previous step reward, the cleanest way (if not the fastest to change) would be to edit the returned next_observation from the env.step() function - 
+the state variable in the environment function code.  Appending the reward from that step to the state should suffice 
+(because it'll be used as next observation, the reward from the step it returns from is what's needed).
 
 '''
 
@@ -38,7 +43,7 @@ env_to_use_2 = 'LunarLander-v2'
 env_to_use_3 = 'LunarLanderContinuous-v2'
 
 # hyperparameters
-target_episodes = 20
+target_episodes = 2
 gamma = 0.99			# reward discount factor
 h1 = 12					# hidden layer 1 size
 h2 = 12					# hidden layer 2 size
@@ -47,7 +52,7 @@ lr = 5e-5				# learning rate
 lr_decay = 1			# learning rate decay (per episode)
 l2_reg = 1e-6			# L2 regularization factor
 dropout = 0				# dropout rate (0 = no dropout)
-num_episodes = 50	# number of episodes
+num_episodes = 5	# number of episodes
 max_steps_ep = 10000	# default max number of steps per episode (unless env has a lower hardcoded limit)
 slow_target_burnin = 1000		# number of steps where slow target weights are tied to current network weights
 update_slow_target_every = 100	# number of steps to use slow target as target before updating it to latest weights
@@ -95,6 +100,7 @@ info['params'] = dict(
 	l2_reg = l2_reg,
 	dropout = dropout,
 	num_episodes = num_episodes,
+	target_episodes = target_episodes,
 	max_steps_ep = max_steps_ep,
 	slow_target_burnin = slow_target_burnin,
 	update_slow_target_every = update_slow_target_every,
@@ -204,9 +210,12 @@ experience = deque(maxlen=replay_memory_capacity)
 epsilon = epsilon_start
 epsilon_linear_step = (epsilon_start-epsilon_end)/epsilon_decay_length
 
-print_weights()
+weights = np.array([get_weights()])
 
 for ep in range(num_episodes):
+
+	if(ep == target_episodes):
+		print("-------------- Changing reward --------------------")
 
 	total_reward = 0
 	steps_in_ep = 0
@@ -269,9 +278,9 @@ for ep in range(num_episodes):
 		total_steps += 1
 		steps_in_ep += 1
 
-		# linearly decay epsilon from epsilon_start to epsilon_end over epsilon_decay_length steps
 		if ep > target_episodes:
 			epsilon = 0.01
+		# linearly decay epsilon from epsilon_start to epsilon_end over epsilon_decay_length steps
 		elif total_steps < epsilon_decay_length:
 			epsilon -= epsilon_linear_step
 		# then exponentially decay it every episode
@@ -287,11 +296,14 @@ for ep in range(num_episodes):
 			break
 
 	print('Episode %2i, Reward: %7.3f, Steps: %i, Next eps: %7.3f'%(ep,total_reward,steps_in_ep, epsilon))
-
-print_weights()
+	weights = np.append(weights, [get_weights()])
 
 # Finalize and upload results
 writefile('info.json', json.dumps(info))
+with open(path.join(outdir, 'weights.npy'), 'wb') as f:
+	np.save(f, weights)
+# with open(path.join(outdir, 'weights.npy'), 'rb') as f:
+# 	a = np.load(f, allow_pickle=True)
 env.close()
 
 
