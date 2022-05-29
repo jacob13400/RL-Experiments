@@ -5,8 +5,7 @@ TODO:
 Refer step 3 before moving on
 1. Write case where previous step reward not part of observation if already is, vice-versa if not.  Addendum: It's not now, I think.
 2. Write case wherer next step reward given as part of observation if possible.
-3. Convert DQN to PPO (do preliminary research before step 2 to see if this would change how 2 and 3 are done)
-4. Add LSTM
+3. Add LSTM
 
 Graph results at any point.
 

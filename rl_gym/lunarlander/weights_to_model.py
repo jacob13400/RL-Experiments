@@ -1,47 +1,15 @@
-'''
-
-TODO:
-
-Refer step 3 before moving on
-1. Write case where previous step reward not part of observation if already is, vice-versa if not.  Addendum: It's not now, I think.
-2. Write case wherer next step reward given as part of observation if possible.
-3. Add LSTM
-
-Graph results at any point.
-
-NOTES
-I think for changing the previous step reward, the cleanest way (if not the fastest to change) would be to edit the returned next_observation from the env.step() function - 
-the state variable in the environment function code.  Appending the reward from that step to the state should suffice 
-(because it'll be used as next observation, the reward from the step it returns from is what's needed).
-
-'''
-
-
 import numpy as np
+import tensorflow as tf
 import gym
 from gym import wrappers
-import tensorflow as tf
 import json, sys, os, datetime
 from os import path
 import random
 from collections import deque
 
-# from envs import LunarLanderNoFuel
+WEIGHTS_FILENAME = "weights_diff_200_500.npy"
+env_to_use = 'LunarLander-v2'
 
-# Deep Q-Networks (DQN)
-# An off-policy action-value function based approach (Q-learning) that uses epsilon-greedy exploration
-# to generate experiences (s, a, r, s'). It uses minibatches of these experiences from replay memory
-# to update the Q-network's parameters.
-# Neural networks are used for function approximation.
-# A slowly-changing "target" Q network, as well as gradient norm clipping, are used to improve
-# stability and encourage convergence.
-# Parameter updates are made via Adam.
-
-env_to_use = 'LunarLanderNoFuel-v2' 
-env_to_use_2 = 'LunarLander-v2'
-env_to_use_3 = 'LunarLanderContinuous-v2'
-
-# hyperparameters
 target_episodes = 2
 gamma = 0.99			# reward discount factor
 h1 = 12					# hidden layer 1 size
@@ -58,29 +26,17 @@ update_slow_target_every = 100	# number of steps to use slow target as target be
 train_every = 1			# number of steps to run the policy (and collect experience) before updating network weights
 replay_memory_capacity = int(1e6)	# capacity of experience replay memory
 minibatch_size = 1024	# size of minibatch from experience replay memory for updates
-epsilon_start = 1.0		# probability of random action at start
+epsilon_start = 0.05		# probability of random action at start
 epsilon_end = 0.05		# minimum probability of random action after linear decay period
 epsilon_decay_length = 1e5		# number of steps over which to linearly decay epsilon
 epsilon_decay_exp = 0.97	# exponential decay rate after reaching epsilon_end (per episode)
 
-# game parameters
 env = gym.make(env_to_use)
-# env = LunarLanderNoFuel()
-state_dim = np.prod(np.array(env.observation_space.shape)) 	# Get total number of dimensions in state
-n_actions = env.action_space.n 								# Assuming discrete action space
-
-env_2 = gym.make(env_to_use_2)
-
-env_3 = gym.make(env_to_use_3)
-
-# set seeds to 0
+state_dim = np.prod(np.array(env.observation_space.shape))
+n_actions = env.action_space.n
 env.seed(0)
-env_2.seed(0)
-env_3.seed(0)
 np.random.seed(0)
 
-# prepare monitorings
-# NOTE: CHANGE DIRECTORY TO MATCH YOUR LOCAL SYSTEM
 outdir = '/home/jose/RL-Experiments/tmp/dqn-agent-results-' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 env = wrappers.Monitor(env, outdir, force=True)
 env_2 = wrappers.Monitor(env, outdir, force=True)
@@ -114,7 +70,6 @@ info['params'] = dict(
 
 tf.reset_default_graph()
 
-# placeholders
 state_ph = tf.placeholder(dtype=tf.float32, shape=[None,state_dim]) # input to Q network
 next_state_ph = tf.placeholder(dtype=tf.float32, shape=[None,state_dim]) # input to slow target network
 action_ph = tf.placeholder(dtype=tf.int32, shape=[None]) # action indices (indices of Q network output)
@@ -126,7 +81,6 @@ is_training_ph = tf.placeholder(dtype=tf.bool, shape=()) # for dropout
 episodes = tf.Variable(0.0, trainable=False, name='episodes')
 episode_inc_op = episodes.assign_add(1)
 
-# will use this to initialize both Q network and slowly-changing target network with same structure
 def generate_network(s, trainable, reuse):
 	hidden = tf.layers.dense(s, h1, activation = tf.nn.relu, trainable = trainable, name = 'dense', reuse = reuse)
 	hidden_drop = tf.layers.dropout(hidden, rate = dropout, training = trainable & is_training_ph)
@@ -137,23 +91,26 @@ def generate_network(s, trainable, reuse):
 	action_values = tf.squeeze(tf.layers.dense(hidden_drop_3, n_actions, trainable = trainable, name = 'dense_3', reuse = reuse))
 	return action_values
 
-# used to get weights of every layer for analysis
-def get_weights(start=0, end=0):
-	ret = {}
-	all_vars = tf.trainable_variables()
-	end = len(all_vars) if end == 0 else end
-	for i in range(len(all_vars)):
-		if all_vars[i].name.startswith("q_network") and i >= start and i < end:
-			a = all_vars[i].value()
-			v = sess.run(a)
-			ret[all_vars[i].name] = v
-	return ret
+def generate_network_with_vals(s, trainable, reuse):
+	init = tf.constant_initializer(data['q_network/dense/kernel:0'])
+	init_bias = tf.constant_initializer(data['q_network/dense/bias:0'])
+	hidden = tf.layers.dense(s, h1, activation = tf.nn.relu, trainable = trainable, name = 'dense', reuse = reuse, kernel_initializer=init, bias_initializer=init_bias)
+	hidden_drop = tf.layers.dropout(hidden, rate = dropout, training = trainable & is_training_ph)
+	init_1 = tf.constant_initializer(data['q_network/dense_1/kernel:0'])
+	init_1_bias = tf.constant_initializer(data['q_network/dense_1/bias:0'])
+	hidden_2 = tf.layers.dense(hidden_drop, h2, activation = tf.nn.relu, trainable = trainable, name = 'dense_1', reuse = reuse, kernel_initializer=init_1, bias_initializer=init_1_bias)
+	hidden_drop_2 = tf.layers.dropout(hidden_2, rate = dropout, training = trainable & is_training_ph)
+	init_2 = tf.constant_initializer(data['q_network/dense_2/kernel:0'])
+	init_2_bias = tf.constant_initializer(data['q_network/dense_2/bias:0'])
+	hidden_3 = tf.layers.dense(hidden_drop_2, h3, activation = tf.nn.relu, trainable = trainable, name = 'dense_2', reuse = reuse, kernel_initializer=init_2, bias_initializer=init_2_bias)
+	hidden_drop_3 = tf.layers.dropout(hidden_3, rate = dropout, training = trainable & is_training_ph)
+	init_3 = tf.constant_initializer(data['q_network/dense_3/kernel:0'])
+	init_3_bias = tf.constant_initializer(data['q_network/dense_3/bias:0'])
+	action_values = tf.squeeze(tf.layers.dense(hidden_drop_3, n_actions, trainable = trainable, name = 'dense_3', reuse = reuse, kernel_initializer=init_3, bias_initializer=init_3_bias))
+	return action_values
 
-def print_weights(start=0, end=0):
-	weights = get_weights(start=start, end=end)
-	for layer in weights:
-		print("{}\n{}".format(layer, weights[layer]))
-
+with open(WEIGHTS_FILENAME, 'rb') as f:
+	data = np.load(f, allow_pickle=True).item()
 
 with tf.variable_scope('q_network') as scope:
 	# Q network applied to state_ph
@@ -161,7 +118,6 @@ with tf.variable_scope('q_network') as scope:
 	# Q network applied to next_state_ph (for double Q learning)
 	q_action_values_next = tf.stop_gradient(generate_network(next_state_ph, trainable = False, reuse = True))
 
-# slow target network
 with tf.variable_scope('slow_target_network', reuse=False):
 	# use stop_gradient to treat the output values as constant targets when doing backprop
 	slow_target_action_values = tf.stop_gradient(generate_network(next_state_ph, trainable = False, reuse = False))
@@ -209,37 +165,19 @@ experience = deque(maxlen=replay_memory_capacity)
 epsilon = epsilon_start
 epsilon_linear_step = (epsilon_start-epsilon_end)/epsilon_decay_length
 
-weights = np.array([get_weights()])
-
-# Checking if q_network and slow_target_network initialized values are equal - They're not.
-# all_vars = tf.global_variables()
-# a = all_vars[1].value()
-# b = all_vars[9].value()
-# a_v = sess.run(a)
-# print(all_vars[1].name)
-# print(a_v)
-# b_v = sess.run(b)
-# print(all_vars[9].name)
-# print(b_v)
-
 for ep in range(num_episodes):
-
-	if(ep == target_episodes):
-		print("-------------- Changing reward --------------------")
 
 	total_reward = 0
 	steps_in_ep = 0
 
 	# Initial state
 	observation = env.reset()
-	observation = env_2.reset()
-	observation = env_3.reset()
 	# env.render()
 
 	for t in range(max_steps_ep):
 
 		# choose action according to epsilon-greedy policy wrt Q
-		if np.random.random() < epsilon and ep < target_episodes:
+		if np.random.random() < epsilon:
 			action = np.random.randint(n_actions)
 		else:
 			q_s = sess.run(q_action_values, 
@@ -247,15 +185,8 @@ for ep in range(num_episodes):
 			action = np.argmax(q_s)
 
 		# take step
-		if ep < target_episodes:
-			next_observation, reward, done, _info = env.step(action)
-			env.render()
-		elif ep < num_episodes:
-			next_observation, reward, done, _info = env_2.step(action)
-			env_2.render()
-		else:
-			next_observation, reward, done, _info = env_3.step(action)
-			env_3.render()
+		next_observation, reward, done, _info = env.step(action)
+		env.render()
 		total_reward += reward
 
 		# add this to experience replay buffer
@@ -288,10 +219,8 @@ for ep in range(num_episodes):
 		total_steps += 1
 		steps_in_ep += 1
 
-		if ep > target_episodes:
-			epsilon = 0.01
 		# linearly decay epsilon from epsilon_start to epsilon_end over epsilon_decay_length steps
-		elif total_steps < epsilon_decay_length:
+		if total_steps < epsilon_decay_length:
 			epsilon -= epsilon_linear_step
 		# then exponentially decay it every episode
 		elif done:
@@ -306,15 +235,7 @@ for ep in range(num_episodes):
 			break
 
 	print('Episode %2i, Reward: %7.3f, Steps: %i, Next eps: %7.3f'%(ep,total_reward,steps_in_ep, epsilon))
-	weights = np.append(weights, [get_weights()])
 
 # Finalize and upload results
 writefile('info.json', json.dumps(info))
-with open(path.join(outdir, 'weights.npy'), 'wb') as f:
-	np.save(f, weights)
-# with open(path.join(outdir, 'weights.npy'), 'rb') as f:
-# 	a = np.load(f, allow_pickle=True)
 env.close()
-
-
-gym.upload(outdir)
