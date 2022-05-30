@@ -7,10 +7,9 @@ from os import path
 import random
 from collections import deque
 
-WEIGHTS_FILENAME = "weights_diff_200_500.npy"
+WEIGHTS_FILENAME = "new_200.npy"
 env_to_use = 'LunarLander-v2'
 
-target_episodes = 2
 gamma = 0.99			# reward discount factor
 h1 = 12					# hidden layer 1 size
 h2 = 12					# hidden layer 2 size
@@ -19,7 +18,7 @@ lr = 5e-5				# learning rate
 lr_decay = 1			# learning rate decay (per episode)
 l2_reg = 1e-6			# L2 regularization factor
 dropout = 0				# dropout rate (0 = no dropout)
-num_episodes = 5	# number of episodes
+num_episodes = 10	# number of episodes
 max_steps_ep = 10000	# default max number of steps per episode (unless env has a lower hardcoded limit)
 slow_target_burnin = 1000		# number of steps where slow target weights are tied to current network weights
 update_slow_target_every = 100	# number of steps to use slow target as target before updating it to latest weights
@@ -37,7 +36,7 @@ n_actions = env.action_space.n
 env.seed(0)
 np.random.seed(0)
 
-outdir = '/home/jose/RL-Experiments/tmp/dqn-agent-results-' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+outdir = '/home/jake/Desktop/Work/RL-Experiments/tmp/dqn-agent-results-' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 env = wrappers.Monitor(env, outdir, force=True)
 env_2 = wrappers.Monitor(env, outdir, force=True)
 env_3 = wrappers.Monitor(env, outdir, force=True)
@@ -55,7 +54,6 @@ info['params'] = dict(
 	l2_reg = l2_reg,
 	dropout = dropout,
 	num_episodes = num_episodes,
-	target_episodes = target_episodes,
 	max_steps_ep = max_steps_ep,
 	slow_target_burnin = slow_target_burnin,
 	update_slow_target_every = update_slow_target_every,

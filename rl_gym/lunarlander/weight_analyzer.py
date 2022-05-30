@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
-WEIGHTS_FILENAME = "weights_diff_200_500.npy"
+WEIGHTS_FILENAME = "weights.npy"
 
 with open(WEIGHTS_FILENAME, 'rb') as f:
     data = np.load(f, allow_pickle=True)
@@ -47,8 +47,6 @@ def truncate(model, lim):
     for arr in model.values():
         arr[arr<lim] = 0
 
-data = data.item()
-
 # Episodes of models to compare
 # EP_1 = 100
 # EP_2 = 200
@@ -71,6 +69,9 @@ data = data.item()
 # heatmap(diff_updates, "Difference b/w updates from {} to {} and {} to {}".format(EP_3, EP_2, EP_2, EP_1), set_abs=False, save=False, save_as="Update_diff_{}_{}_{}.png".format(EP_1, EP_2, EP_3))
 # plt.show()
 
+w200 = data[199]
+w500 = data[499]
 
-# diff_200_500 = weights_diff(data[199], data[499])
-# npy_save("weights_diff_200_500.npy", diff_200_500)
+diff_200_500 = weights_diff(data[199], data[499])
+new_200 = weights_diff(diff_200_500, data[199])
+npy_save("new_200.npy", new_200)
