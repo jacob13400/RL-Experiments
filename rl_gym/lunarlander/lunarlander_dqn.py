@@ -42,7 +42,7 @@ env_to_use_2 = 'LunarLander-v2'
 env_to_use_3 = 'LunarLanderContinuous-v2'
 
 # hyperparameters
-target_episodes = 350
+target_episodes = 0
 gamma = 0.99			# reward discount factor
 h1 = 12					# hidden layer 1 size
 h2 = 12					# hidden layer 2 size
@@ -249,10 +249,10 @@ for ep in range(num_episodes):
 		# take step
 		if ep < target_episodes:
 			next_observation, reward, done, _info = env.step(action)
-			# env.render()
+			env.render()
 		elif ep < num_episodes:
 			next_observation, reward, done, _info = env_2.step(action)
-			# env_2.render()
+			env_2.render()
 		else:
 			next_observation, reward, done, _info = env_3.step(action)
 			# env_3.render()
