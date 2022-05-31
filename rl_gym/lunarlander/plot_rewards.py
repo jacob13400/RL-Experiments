@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import make_interp_spline
 import numpy as np
 
-FILENAME = "openaigym.episode_batch.0.42982.stats.json"
+FILENAME = "t500.e1000.json"
 
 with open(FILENAME) as f:
     data = json.load(f)
@@ -12,8 +12,8 @@ rewards = data["episode_rewards"]
 
 # print(rewards)
 
-x1=list(range(1,201))
-x2=list(range(201,501))
+x1=list(range(1,501))
+x2=list(range(501,1001))
 # print(x)
 y1=rewards[:200]
 y2=rewards[200:]
