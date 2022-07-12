@@ -44,10 +44,10 @@ env_to_use_3 = 'LunarLanderContinuous-v2'
 # hyperparameters
 target_episodes = 0
 gamma = 0.99			# reward discount factor
-h1 = 12					# hidden layer 1 size
-h2 = 12					# hidden layer 2 size
-h3 = 12					# hidden layer 3 size
-lr = 5e-5				# learning rate
+h1 = 20					# hidden layer 1 size
+h2 = 20					# hidden layer 2 size
+h3 = 20					# hidden layer 3 size
+lr = 5e-4				# learning rate
 lr_decay = 1			# learning rate decay (per episode)
 l2_reg = 1e-6			# L2 regularization factor
 dropout = 0				# dropout rate (0 = no dropout)
